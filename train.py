@@ -39,8 +39,9 @@ parser.add_argument('--vit_name', type=str,
                     default='R50-ViT-B_16', help='select one vit model')
 parser.add_argument('--vit_patches_size', type=int,
                     default=16, help='vit_patches_size, default is 16')
+parser.add_argument('--checkpoint', type=str,
+                    default=None, help='path to checkpoint from a previous run')
 args = parser.parse_args()
-
 
 if __name__ == "__main__":
     if not args.deterministic:
@@ -87,7 +88,11 @@ if __name__ == "__main__":
     if args.vit_name.find('R50') != -1:
         config_vit.patches.grid = (int(args.img_size / args.vit_patches_size), int(args.img_size / args.vit_patches_size))
     net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
-    net.load_from(weights=np.load(config_vit.pretrained_path))
+
+    if args.checkpoint:
+        net.load_state_dict(torch.load(args.checkpoint))
+    else:
+        net.load_from(weights=np.load(config_vit.pretrained_path))
 
     trainer = {'Synapse': trainer_synapse,}
     trainer[dataset_name](args, net, snapshot_path)
