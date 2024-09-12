@@ -15,8 +15,8 @@ from tqdm import tqdm
 from utils import DiceLoss
 from torchvision import transforms
 
-def trainer_synapse(args, model, snapshot_path):
-    from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
+def trainer_keratinpearls(args, model, snapshot_path):
+    from datasets.dataset_keratinpearls import KeratinPearls_dataset, RandomGenerator
     logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -25,7 +25,7 @@ def trainer_synapse(args, model, snapshot_path):
     num_classes = args.num_classes
     batch_size = args.batch_size * args.n_gpu
     # max_iterations = args.max_iterations
-    db_train = Synapse_dataset(base_dir=args.root_path, list_dir=args.list_dir, split="train",
+    db_train = KeratinPearls_dataset(base_dir=args.root_path, list_dir=args.list_dir, split="train",
                                transform=transforms.Compose(
                                    [RandomGenerator(output_size=[args.img_size, args.img_size])]))
     print("The length of train set is: {}".format(len(db_train)))
@@ -81,7 +81,7 @@ def trainer_synapse(args, model, snapshot_path):
 
         save_interval = 10  # int(max_epoch/6)
         if epoch_num > 50 and (epoch_num + 1) % save_interval == 0:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num + 1) + '.pth')
+            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
             torch.save(model.state_dict(), save_mode_path)
             logging.info("save model to {}".format(save_mode_path))
 
@@ -94,3 +94,4 @@ def trainer_synapse(args, model, snapshot_path):
 
     writer.close()
     return "Training Finished!"
+
