@@ -7,7 +7,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
-from trainer import trainer_synapse
+from trainer import trainer_keratinpearls
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_path', type=str,
@@ -57,10 +57,10 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(args.seed)
     dataset_name = args.dataset
     dataset_config = {
-        'Synapse': {
-            'root_path': '../data/Synapse/train_npz',
-            'list_dir': './lists/lists_Synapse',
-            'num_classes': 9,
+        'KeratinPearls': {
+            'root_path': '../data/KeratinPearls/',
+            'list_dir': './lists/lists_KeratinPearls',
+            'num_classes': 2,
         },
     }
     args.num_classes = dataset_config[dataset_name]['num_classes']
@@ -94,5 +94,6 @@ if __name__ == "__main__":
     else:
         net.load_from(weights=np.load(config_vit.pretrained_path))
 
-    trainer = {'Synapse': trainer_synapse,}
+    trainer = {'KeratinPearls': trainer_keratinpearls,}
     trainer[dataset_name](args, net, snapshot_path)
+
