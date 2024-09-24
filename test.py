@@ -56,15 +56,15 @@ def inference(args, model, test_save_path=None):
             images, labels, case_names = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name']
             
             print(f"\nBatch {i_batch}:")
-            print(f"  Original Images shape: {images.shape}")
-            print(f"  Original Labels shape: {labels.shape}")
-            print(f"  Images min: {images.min()}, max: {images.max()}")
-            print(f"  Labels unique values: {torch.unique(labels)}")
+            # print(f"  Original Images shape: {images.shape}")
+            # print(f"  Original Labels shape: {labels.shape}")
+            # print(f"  Images min: {images.min()}, max: {images.max()}")
+            # print(f"  Labels unique values: {torch.unique(labels)}")
             
             images = images.permute(0, 3, 1, 2)
             
-            print(f"  Permuted Images shape: {images.shape}")
-            print(f"  Number of cases: {len(case_names)}")
+            # print(f"  Permuted Images shape: {images.shape}")
+            # print(f"  Number of cases: {len(case_names)}")
 
             metric_i = test_single_volume(images, labels, model, classes=args.num_classes, 
                                           patch_size=[args.img_size, args.img_size],
@@ -83,7 +83,7 @@ def inference(args, model, test_save_path=None):
     print(f"Final metric_list shape: {metric_list.shape}")
     print(f"Final metric_list: {metric_list}")
 
-    for i in range(1, args.num_classes):
+    for i in range(1, args.num_classes + 1):
         logging.info('Mean class %d mean_dice %f mean_hd95 %f' % 
                      (i, np.mean(metric_list[:, i-1, 0]), np.mean(metric_list[:, i-1, 1])))
 

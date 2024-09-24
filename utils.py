@@ -48,9 +48,9 @@ class DiceLoss(nn.Module):
 def calculate_metric_percase(pred, gt):
     pred[pred > 0] = 1
     gt[gt > 0] = 1
-    print(f"Unique values in pred: {np.unique(pred)}")
-    print(f"Unique values in gt: {np.unique(gt)}")
-    print(f"Pred sum: {pred.sum()}, GT sum: {gt.sum()}")
+    # print(f"Unique values in pred: {np.unique(pred)}")
+    # print(f"Unique values in gt: {np.unique(gt)}")
+    # print(f"Pred sum: {pred.sum()}, GT sum: {gt.sum()}")
     if pred.sum() > 0 and gt.sum()>0:
         dice = metric.binary.dc(pred, gt)
         hd95 = metric.binary.hd95(pred, gt)
@@ -74,29 +74,29 @@ def test_single_volume(images, labels, net, classes, patch_size=[224, 224], test
         image, label = images[b], labels[b]
         
         print(f"\nProcessing image {b}")
-        print(f"Original image shape: {image.shape}, Original label shape: {label.shape}")
-        print(f"Original image min: {image.min()}, max: {image.max()}")
-        print(f"Original label unique values: {np.unique(label)}")
+        # print(f"Original image shape: {image.shape}, Original label shape: {label.shape}")
+        # print(f"Original image min: {image.min()}, max: {image.max()}")
+        # print(f"Original label unique values: {np.unique(label)}")
         
         # Resize both image and label to patch_size
         image = zoom(image, (1, patch_size[0] / h, patch_size[1] / w), order=3)
         label = zoom(label, (patch_size[0] / h, patch_size[1] / w), order=0)  # Use order=0 for nearest neighbor interpolation
         
-        print(f"Resized image shape: {image.shape}, Resized label shape: {label.shape}")
-        print(f"Resized image min: {image.min()}, max: {image.max()}")
-        print(f"Resized label unique values: {np.unique(label)}")
+        # print(f"Resized image shape: {image.shape}, Resized label shape: {label.shape}")
+        # print(f"Resized image min: {image.min()}, max: {image.max()}")
+        # print(f"Resized label unique values: {np.unique(label)}")
         
         input = torch.from_numpy(image).unsqueeze(0).float().cuda()
         net.eval()
         with torch.no_grad():
             outputs = net(input)
-            print(f"Network output shape: {outputs.shape}")
-            print(f"Network output min: {outputs.min().item()}, max: {outputs.max().item()}")
+            # print(f"Network output shape: {outputs.shape}")
+            # print(f"Network output min: {outputs.min().item()}, max: {outputs.max().item()}")
             prediction = torch.argmax(torch.softmax(outputs, dim=1), dim=1).squeeze(0)
             prediction = prediction.cpu().detach().numpy()
         
-        print(f"Prediction shape: {prediction.shape}")
-        print(f"Prediction unique values: {np.unique(prediction)}")
+        # print(f"Prediction shape: {prediction.shape}")
+        # print(f"Prediction unique values: {np.unique(prediction)}")
         
         predictions[b] = prediction
         
@@ -138,3 +138,4 @@ def test_single_volume(images, labels, net, classes, patch_size=[224, 224], test
     
     print(f"\nFinal metric_lists: {metric_lists}")
     return metric_lists
+
