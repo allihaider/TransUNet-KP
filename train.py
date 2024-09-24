@@ -41,6 +41,8 @@ parser.add_argument('--vit_patches_size', type=int,
                     default=16, help='vit_patches_size, default is 16')
 parser.add_argument('--checkpoint', type=str,
                     default=None, help='path to checkpoint from a previous run')
+parser.add_argument('--train_predictions_dir', type=str,
+                    default=None, help='directory to save train predictions')
 args = parser.parse_args()
 
 if __name__ == "__main__":

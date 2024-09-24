@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utils import DiceLoss
 from torchvision import transforms
+from PIL import Image
 
 def trainer_keratinpearls(args, model, snapshot_path):
     from datasets.dataset_keratinpearls import KeratinPearls_dataset, RandomGenerator
@@ -24,6 +25,10 @@ def trainer_keratinpearls(args, model, snapshot_path):
     base_lr = args.base_lr
     num_classes = args.num_classes
     batch_size = args.batch_size * args.n_gpu
+
+    if args.train_predictions_dir:
+        os.makedirs(args.train_predictions_dir, exist_ok=True)
+
     # max_iterations = args.max_iterations
     db_train = KeratinPearls_dataset(base_dir=args.root_path, list_dir=args.list_dir, split="train",
                                transform=transforms.Compose(
@@ -70,14 +75,23 @@ def trainer_keratinpearls(args, model, snapshot_path):
 
             logging.info('iteration %d : loss : %f, loss_ce: %f' % (iter_num, loss.item(), loss_ce.item()))
 
-            if iter_num % 20 == 0:
-                image = image_batch[1, 0:1, :, :]
+            if iter_num % 10 == 0:
+                image = image_batch[1, 0:3, :, :]
                 image = (image - image.min()) / (image.max() - image.min())
                 writer.add_image('train/Image', image, iter_num)
                 outputs = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
                 writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
                 labs = label_batch[1, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
+                
+                if args.train_predictions_dir:
+                    input_image = Image.fromarray((image.cpu().numpy() * 255).transpose(1, 2, 0).astype(np.uint8))
+                    pred_image = Image.fromarray((outputs[1, 0].cpu().numpy() * 50).astype(np.uint8))
+                    gt_image = Image.fromarray(label_batch[1].cpu().numpy().astype(np.uint8) * 50)
+                    
+                    input_image.save(os.path.join(args.train_predictions_dir, f'input_{iter_num}.png'))
+                    pred_image.save(os.path.join(args.train_predictions_dir, f'pred_{iter_num}.png'))
+                    gt_image.save(os.path.join(args.train_predictions_dir, f'gt_{iter_num}.png'))
 
         save_interval = 10  # int(max_epoch/6)
         if epoch_num > 50 and (epoch_num + 1) % save_interval == 0:
