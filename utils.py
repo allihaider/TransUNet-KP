@@ -64,71 +64,45 @@ def calculate_metric_percase(pred, gt):
         return 0, 0
 
 def test_single_volume(images, labels, net, classes, patch_size=[224, 224], test_save_path=None, cases=None, z_spacing=1):
-    images, labels = images.cpu().detach().numpy(), labels.cpu().detach().numpy()
-    batch_size, _, h, w = images.shape
+    images, labels = images.cuda(), labels.cuda()
+    net.eval()
     
-    predictions = np.zeros((batch_size, patch_size[0], patch_size[1]))
+    with torch.no_grad():
+        outputs = net(images)
+        predictions = torch.argmax(torch.softmax(outputs, dim=1), dim=1)
+
+    images = images.cpu().numpy()
+    labels = labels.cpu().numpy()
+    predictions = predictions.cpu().numpy()
+        
     metric_lists = []
-    
-    for b in range(batch_size):
-        image, label = images[b], labels[b]
-        
-        print(f"\nProcessing image {b}")
-        # print(f"Original image shape: {image.shape}, Original label shape: {label.shape}")
-        # print(f"Original image min: {image.min()}, max: {image.max()}")
-        # print(f"Original label unique values: {np.unique(label)}")
-        
-        # Resize both image and label to patch_size
-        image = zoom(image, (1, patch_size[0] / h, patch_size[1] / w), order=3)
-        label = zoom(label, (patch_size[0] / h, patch_size[1] / w), order=0)  # Use order=0 for nearest neighbor interpolation
-        
-        # print(f"Resized image shape: {image.shape}, Resized label shape: {label.shape}")
-        # print(f"Resized image min: {image.min()}, max: {image.max()}")
-        # print(f"Resized label unique values: {np.unique(label)}")
-        
-        input = torch.from_numpy(image).unsqueeze(0).float().cuda()
-        net.eval()
-        with torch.no_grad():
-            outputs = net(input)
-            # print(f"Network output shape: {outputs.shape}")
-            # print(f"Network output min: {outputs.min().item()}, max: {outputs.max().item()}")
-            prediction = torch.argmax(torch.softmax(outputs, dim=1), dim=1).squeeze(0)
-            prediction = prediction.cpu().detach().numpy()
-        
-        # print(f"Prediction shape: {prediction.shape}")
-        # print(f"Prediction unique values: {np.unique(prediction)}")
-        
-        predictions[b] = prediction
-        
-        # Calculate metrics for this case
+
+    for b in range(images.shape[0]):
         metric_list = []
-        for i in range(0, classes):
-            print(f"\nCalculating metrics for class {i}")
-            metric_list.append(calculate_metric_percase(prediction == i, label == i))
+
+        for i in range(classes):
+            metric_list.append(calculate_metric_percase(predictions[b] == i, labels[b] == i))
         metric_lists.append(metric_list)
-        
+
         # Save debug visualizations
         if test_save_path is not None and cases is not None:
             case = cases[b]
             plt.figure(figsize=(15, 5))
             plt.subplot(131)
-            plt.imshow(image[0], cmap='gray')
+            plt.imshow(images[b, 0], cmap='gray')
             plt.title('Input Image')
             plt.subplot(132)
-            plt.imshow(prediction, cmap='jet')
+            plt.imshow(predictions[b], cmap='jet')
             plt.title('Prediction')
             plt.subplot(133)
-            plt.imshow(label, cmap='jet')
+            plt.imshow(labels[b], cmap='jet')
             plt.title('Ground Truth')
             plt.savefig(f"{test_save_path}/{case}_debug.png")
             plt.close()
         
-        # Save results if path is provided
-        if test_save_path is not None and cases is not None:
-            case = cases[b]
-            img_itk = sitk.GetImageFromArray(image.astype(np.float32))
-            prd_itk = sitk.GetImageFromArray(prediction.astype(np.float32))
-            lab_itk = sitk.GetImageFromArray(label.astype(np.float32))
+            img_itk = sitk.GetImageFromArray(images[b].astype(np.float32))
+            prd_itk = sitk.GetImageFromArray(predictions[b].astype(np.float32))
+            lab_itk = sitk.GetImageFromArray(labels[b].astype(np.float32))
             img_itk.SetSpacing((1, 1, z_spacing))
             prd_itk.SetSpacing((1, 1, z_spacing))
             lab_itk.SetSpacing((1, 1, z_spacing))
@@ -136,6 +110,5 @@ def test_single_volume(images, labels, net, classes, patch_size=[224, 224], test
             sitk.WriteImage(img_itk, test_save_path + '/' + case + "_img.nii.gz")
             sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")
     
-    print(f"\nFinal metric_lists: {metric_lists}")
     return metric_lists
 

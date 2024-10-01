@@ -22,27 +22,30 @@ def random_rotate(image, label):
     return image, label
 
 class RandomGenerator(object):
-    def __init__(self, output_size):
+    def __init__(self, output_size, test=False):
         self.output_size = output_size
+        self.test = test
 
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
-
-        if random.random() > 0.5:
-            image, label = random_rot_flip(image, label)
-        elif random.random() > 0.5:
-            image, label = random_rotate(image, label)
-
+        
+        if not self.test:
+            if random.random() > 0.5:
+                image, label = random_rot_flip(image, label)
+            elif random.random() > 0.5:
+                image, label = random_rotate(image, label)
+        
         h, w = image.shape[:2]
         if h != self.output_size[0] or w != self.output_size[1]:
             zoom_factors = (self.output_size[0] / h, self.output_size[1] / w) + (1,) * (image.ndim - 2)
             image = zoom(image, zoom_factors, order=3)
             label = zoom(label, zoom_factors[:2], order=0)
-
+        
         image = torch.from_numpy(image.astype(np.float32)).permute(2, 0, 1)
         label = torch.from_numpy(label.astype(np.float32))
         sample = {'image': image, 'label': label.long()}
-        return sample
+        
+        return sample 
 
 class KeratinPearls_dataset(Dataset):
     def __init__(self, base_dir, list_dir, split, transform=None):
@@ -71,5 +74,4 @@ class KeratinPearls_dataset(Dataset):
             
         sample['case_name'] = slice_name
         return sample
-
 

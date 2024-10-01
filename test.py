@@ -2,14 +2,15 @@ import argparse
 import logging
 import os
 import random
-import sys
+import sys 
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from datasets.dataset_keratinpearls import KeratinPearls_dataset
+from datasets.dataset_keratinpearls import KeratinPearls_dataset, RandomGenerator
 from utils import test_single_volume
+from torchvision import transforms
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
 
@@ -42,8 +43,10 @@ args = parser.parse_args()
 
     
 def inference(args, model, test_save_path=None):
-    db_test = KeratinPearls_dataset(base_dir=args.root_path, split="test", list_dir=args.list_dir)
+    db_test = KeratinPearls_dataset(base_dir=args.root_path, split="test", list_dir=args.list_dir,
+                                    transform=transforms.Compose([RandomGenerator(output_size=[args.img_size, args.img_size], test=True)]))
     testloader = DataLoader(db_test, batch_size=args.batch_size, shuffle=False, num_workers=8)
+                                   
     logging.info("{} test iterations per epoch".format(len(testloader)))
     model.eval()
     metric_list = []
@@ -54,14 +57,13 @@ def inference(args, model, test_save_path=None):
     with torch.no_grad():
         for i_batch, sampled_batch in tqdm(enumerate(testloader)):
             images, labels, case_names = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name']
-            
             print(f"\nBatch {i_batch}:")
             # print(f"  Original Images shape: {images.shape}")
             # print(f"  Original Labels shape: {labels.shape}")
             # print(f"  Images min: {images.min()}, max: {images.max()}")
             # print(f"  Labels unique values: {torch.unique(labels)}")
             
-            images = images.permute(0, 3, 1, 2)
+            # images = images.permute(0, 3, 1, 2)
             
             # print(f"  Permuted Images shape: {images.shape}")
             # print(f"  Number of cases: {len(case_names)}")
