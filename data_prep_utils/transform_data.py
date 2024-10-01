@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-def split_image(image, chunk_size=500):
+def split_image(image, chunk_size=400):
     width, height = image.size
     chunks = []
     for i in range(0, height, chunk_size):
