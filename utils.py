@@ -44,24 +44,27 @@ class DiceLoss(nn.Module):
             loss += dice * weight[i]
         return loss / self.n_classes
 
-
 def calculate_metric_percase(pred, gt):
-    pred[pred > 0] = 1
-    gt[gt > 0] = 1
-    # print(f"Unique values in pred: {np.unique(pred)}")
-    # print(f"Unique values in gt: {np.unique(gt)}")
-    # print(f"Pred sum: {pred.sum()}, GT sum: {gt.sum()}")
-    if pred.sum() > 0 and gt.sum()>0:
+    pred = (pred > 0).astype(int)
+    gt = (gt > 0).astype(int)
+    
+    max_hd = np.sqrt(np.sum(np.array(pred.shape)**2))
+    
+    if pred.sum() > 0 and gt.sum() > 0:
         dice = metric.binary.dc(pred, gt)
         hd95 = metric.binary.hd95(pred, gt)
         print(f"Dice: {dice}, HD95: {hd95}")
         return dice, hd95
-    elif pred.sum() > 0 and gt.sum()==0:
+    elif pred.sum() > 0 and gt.sum() == 0:
         print("Pred sum > 0 but GT sum = 0")
-        return 1, 0
+        return 0, max_hd 
+    elif pred.sum() == 0 and gt.sum() > 0:
+        print("GT sum > 0 but Pred sum = 0")
+        return 0, max_hd  
     else:
-        print("Pred sum = 0 or both Pred and GT sum = 0")
-        return 0, 0
+        print("Both Pred and GT sum = 0")
+        return 1, 0 
+
 
 def test_single_volume(images, labels, net, classes, patch_size=[224, 224], test_save_path=None, cases=None, z_spacing=1):
     images, labels = images.cuda(), labels.cuda()
