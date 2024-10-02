@@ -2,6 +2,7 @@ import os
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+import re
 
 def split_image(image, chunk_size=400):
     width, height = image.size
@@ -13,8 +14,34 @@ def split_image(image, chunk_size=400):
             chunks.append(chunk)
     return chunks
 
+def get_corresponding_mask_filename(test_filename):
+    base_part = test_filename.split('.svs_')[0]
+    coords = re.search(r'\[(\d+),(\d+),(\d+),(\d+)\]', test_filename)
+    if coords:
+        x, y, width, height = map(int, coords.groups())
+        mask_pattern = f"{base_part}_\\(1.00,{y},{x},{height},{width}\\)_labels\\.png"
+        return mask_pattern
+    return None
+
+def find_matching_files(test_folder, masks_folder):
+    matches = {}
+    unmatched_test_files = []
+    for test_file in os.listdir(test_folder):
+        mask_pattern = get_corresponding_mask_filename(test_file)
+        if mask_pattern:
+            found_match = False
+            for mask_file in os.listdir(masks_folder):
+                if re.match(mask_pattern, mask_file):
+                    matches[test_file] = mask_file
+                    found_match = True
+                    break
+            if not found_match:
+                unmatched_test_files.append(test_file)
+        else:
+            unmatched_test_files.append(test_file)
+    return matches, unmatched_test_files
+
 def process_dataset(input_root, output_root):
-    # Create necessary directories
     os.makedirs(os.path.join(output_root, "data", "KeratinPearls", "train_npz"), exist_ok=True)
     os.makedirs(os.path.join(output_root, "data", "KeratinPearls", "test_npz"), exist_ok=True)
     os.makedirs(os.path.join(output_root, "TransUNet", "lists", "lists_KeratinPearls"), exist_ok=True)
@@ -55,16 +82,15 @@ def process_dataset(input_root, output_root):
 
     # Process test data
     test_dir = os.path.join(input_root, "test")
-    test_files = os.listdir(test_dir)
+    masks_dir = os.path.join(input_root, "masks")
+    matches, unmatched = find_matching_files(test_dir, masks_dir)
+    
     print("\nProcessing test data:")
-    for img_name in tqdm(test_files, desc="Testing"):
-        case_name = '.'.join(img_name.split('.')[:-1])
-        img_path = os.path.join(test_dir, img_name)
-        mask_path = os.path.join(input_root, "test_bbox_masks", img_name)
-        
-        if not os.path.exists(mask_path):
-            print(f"Warning: Mask not found for {img_name}. Skipping.")
-            continue
+    for test_file, mask_file in tqdm(matches.items(), desc="Testing"):
+        case_name = test_file.replace('.svs_', '_')
+        case_name = '.'.join(case_name.split('.')[:-1])
+        img_path = os.path.join(test_dir, test_file)
+        mask_path = os.path.join(masks_dir, mask_file)
         
         img = Image.open(img_path)
         mask = Image.open(mask_path)
@@ -85,6 +111,10 @@ def process_dataset(input_root, output_root):
             
             test_slices.append(slice_name + '\n')
             all_slices.append(slice_name + '.npz\n')
+
+    print("\nUnmatched test files:")
+    for test_file in unmatched:
+        print(test_file)
 
     print("\nWriting list files...")
     # Write list files
