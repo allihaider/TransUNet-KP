@@ -3,7 +3,6 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import re
-
 def split_image(image, chunk_size=400):
     width, height = image.size
     chunks = []
@@ -66,8 +65,18 @@ def process_dataset(input_root, output_root):
         img = Image.open(img_path)
         mask = Image.open(mask_path)
         
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
+
+        mask_array = np.array(mask)
+    
+        if len(mask_array.shape) == 3:
+            mask_array = mask_array[:, :, 0] 
+    
+        binary_mask = (mask_array > 127).astype(np.uint8)
+    
         img_chunks = split_image(img)
-        mask_chunks = split_image(mask)
+        mask_chunks = split_image(Image.fromarray(binary_mask, mode='P'))
         
         for i, (img_chunk, mask_chunk) in enumerate(zip(img_chunks, mask_chunks)):
             slice_name = f"{case_name}_slice{i:03d}"
@@ -83,6 +92,7 @@ def process_dataset(input_root, output_root):
     # Process test data
     test_dir = os.path.join(input_root, "test")
     test_files = os.listdir(test_dir)
+
     print("\nProcessing test data:")
     for img_name in tqdm(test_files, desc="Testing"):
         case_name = '.'.join(img_name.split('.')[:-1])
@@ -98,10 +108,17 @@ def process_dataset(input_root, output_root):
 
         if img.mode == 'RGBA':
             img = img.convert('RGB')
-        
-        img_chunks = split_image(img)
-        mask_chunks = split_image(mask)
+
+        mask_array = np.array(mask)
     
+        if len(mask_array.shape) == 3:
+            mask_array = mask_array[:, :, 0] 
+    
+        binary_mask = (mask_array > 127).astype(np.uint8)
+    
+        img_chunks = split_image(img)
+        mask_chunks = split_image(Image.fromarray(binary_mask, mode='P'))
+
         for i, (img_chunk, mask_chunk) in enumerate(zip(img_chunks, mask_chunks)):
             slice_name = f"{case_name}_slice{i:03d}"
             npz_path = os.path.join(output_root, "data", "KeratinPearls", "test_npz", f"{slice_name}.npz")
