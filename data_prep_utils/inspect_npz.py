@@ -20,6 +20,10 @@ def inspect_npz(file_path):
                 print(f"  Min value: {array.min()}")
                 print(f"  Max value: {array.max()}")
                 print(f"  Mean value: {array.mean()}")
+
+                unique_values = np.unique(array)
+                print(f"  Unique values: {unique_values[:10]}{'...' if len(unique_values) > 10 else ''}")
+                print(f"  Number of unique values: {len(unique_values)}")
                 
                 # Print a small sample of the data
                 print("  Sample data:")
