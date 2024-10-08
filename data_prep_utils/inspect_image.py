@@ -31,11 +31,19 @@ def inspect_png(file_path):
                     print(f"  Min value: {channel.min()}")
                     print(f"  Max value: {channel.max()}")
                     print(f"  Mean value: {channel.mean():.2f}")
+
+                    unique_values = np.unique(channel)
+                    print(f"  Unique values: {unique_values[:10]}{'...' if len(unique_values) > 10 else ''}")
+                    print(f"  Number of unique values: {len(unique_values)}")
             else:
                 print("Single channel (grayscale) image:")
                 print(f"  Min value: {img_array.min()}")
                 print(f"  Max value: {img_array.max()}")
                 print(f"  Mean value: {img_array.mean():.2f}")
+
+                unique_values = np.unique(img_array)
+                print(f"  Unique values: {unique_values[:10]}{'...' if len(unique_values) > 10 else ''}")
+                print(f"  Number of unique values: {len(unique_values)}")
             
             # Print a small sample of the data
             print("Sample data (top-left 3x3 pixel values):")
